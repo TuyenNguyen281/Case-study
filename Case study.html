@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Game</title>
+</head>
+<body>
+<canvas id="canvas" width="680" height="470" style="border: 1px solid #000000"></canvas>
+<script>
+    let checkY = true;
+    let checkX = true;
+    let brickColumn = 5;
+    let brickRow = 10;
+    let brickwidth = 20;
+    let brickheight = 10;
+    let checkbrick = true
+
+
+    let myGameArea = {
+        canvas: document.getElementById("canvas"),
+        start: function () {
+            this.context = this.canvas.getContext("2d");
+            this.interval = setInterval(updateGameArea, 20);
+
+            //    Sự kiện bàn phím
+            window.addEventListener('keydown', function (e) {
+                myGameArea.keys = e.keyCode;
+            });
+            window.addEventListener('keyup', function (e) {
+                myGameArea.keys = false;
+            })
+        },
+        clear: function () {
+            this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        }
+    }
+
+    function component(width, height, color, x, y) {
+        //Khai báo thuộc tính cho lớp
+        this.width = width;
+        this.height = height;
+        this.color = color;
+        this.x = x;
+        this.y = y;
+        this.speedX = 0;
+        this.speedY = 0;
+        //Khai báo phương thức (hành vi) của lớp
+        this.draw = function () {
+            let ctx = myGameArea.context;
+            ctx.fillStyle = this.color;
+            ctx.fillRect(this.x, this.y, this.width, this.height);
+        }
+        this.newPos = function () {
+            this.x += this.speedX;
+            this.y += this.speedY;
+        }
+
+    }
+
+    let redGamePiece
+    let greenGamePiece
+    let bricks = [];
+
+    //Tạo các đối tượng của game
+    function startGame() {
+        redGamePiece = new component(100, 10, "red", 300, 460);
+        greenGamePiece = new component(10, 10, "green", 200, 200);
+
+        //Vẽ gạch
+        for (let i = 0; i < brickColumn; i++) {
+            bricks[i] = [];
+            for (let j = 0; j < brickRow; j++) {
+                let brickX = (j * (brickwidth + 30)) + 10;
+                let brickY = (i * (brickheight + 30)) + 10;
+
+                bricks[i][j] = new component(30, 10, "blue", brickX, brickY)
+            }
+        }
+        myGameArea.start();
+        redGamePiece.draw();
+        greenGamePiece.draw();
+        for (let i = 0; i < brickColumn; i++) {
+            for (let j = 0; j < brickRow; j++) {
+
+                bricks[i][j].draw();
+            }
+        }
+    }
+
+    function updateGameArea() {
+
+        myGameArea.clear();
+        //Tạo điều kiện chuyển động cho redGamepiece
+        redGamePiece.speedX = 0;
+        redGamePiece.speedY = 0;
+        if (myGameArea.keys == 37 && (redGamePiece.x + redGamePiece.speedX) > 0) {
+            redGamePiece.speedX = -10;
+        }
+        if (myGameArea.keys == 39 && (redGamePiece.x + redGamePiece.speedX) < (canvas.width - redGamePiece.width)) {
+            redGamePiece.speedX = 10;
+        }
+        redGamePiece.newPos();
+        redGamePiece.draw();
+
+
+        //Tạo điều kiện chuyển động cho greenGamePiece
+        greenGamePiece.speedX = 0;
+        greenGamePiece.speedY = 0;
+        //Chuyển động khi chạm vào tường 2 bên
+        if ((greenGamePiece.x + greenGamePiece.speedX) > (canvas.width - greenGamePiece.width)) {
+            checkX = false;
+        }
+        if ((greenGamePiece.x + greenGamePiece.speedX) < 0) {
+            checkX = true;
+        }
+        if (!checkX) {
+            greenGamePiece.speedX = -2;
+
+        } else if (checkX) {
+            greenGamePiece.speedX = 2;
+        }
+        //Chuyển động khi chạm vào tấm chắn và tường phía trên
+        for (let i = 0; i < brickColumn; i++) {
+            for (let j = 0; j < brickRow; j++) {
+
+                let b = bricks[i][j];
+                if ((greenGamePiece.y + greenGamePiece.speedY > canvas.height - greenGamePiece.height - redGamePiece.height
+                    && greenGamePiece.x + greenGamePiece.speedX > redGamePiece.x + redGamePiece.speedX
+                    && greenGamePiece.x + greenGamePiece.speedX < redGamePiece.x + redGamePiece.speedX + redGamePiece.width)
+                    || ((greenGamePiece.y + greenGamePiece.speedY + greenGamePiece.weight) < b.y
+                        && greenGamePiece.x + greenGamePiece.speedX > b.x
+                        && greenGamePiece.x + greenGamePiece.speedX < b.x + b.width)) {
+                    checkY = false;
+                }
+                if ((greenGamePiece.y + greenGamePiece.speedY < 0)
+                    || ((greenGamePiece.y + greenGamePiece.speedY) < (b.y + b.height)
+                        && greenGamePiece.x + greenGamePiece.speedX > b.x
+                        && greenGamePiece.x + greenGamePiece.speedX < b.x + b.width)) {
+                    checkY = true;
+                }
+                if (!checkY) {
+                    greenGamePiece.speedY = -2;
+                } else if (checkY) {
+                    greenGamePiece.speedY = 2;
+                }
+            }
+        }
+        greenGamePiece.newPos();
+        greenGamePiece.draw();
+
+        for (let i = 0; i < brickColumn; i++) {
+            for (let j = 0; j < brickRow; j++) {
+                let b = bricks[i][j];
+                if ((greenGamePiece.y + greenGamePiece.speedY + greenGamePiece.weight) == b.y
+                    && greenGamePiece.x + greenGamePiece.speedX > b.x
+                    && greenGamePiece.x + greenGamePiece.speedX < b.x + b.width
+                    || (greenGamePiece.y + greenGamePiece.speedY) == (b.y + b.height)
+                    && greenGamePiece.x + greenGamePiece.speedX > b.x
+                    && greenGamePiece.x + greenGamePiece.speedX < b.x + b.width) {
+
+                    checkbrick = false;
+                }
+                if (checkbrick)
+                    bricks[i][j].draw()
+            }
+        }
+    }
+
+
+    startGame()
+
+</script>
+
+</body>
+</html>
